@@ -9,7 +9,7 @@ def main():
     img_path='../bbox_test/'
     loc_normalize_std=[0.1,0.1,0.2,0.2]
     model=Box_reg()
-    checkpoint=torch.load('../checkpoint/front80__model.pth',map_location='cpu')
+    checkpoint=torch.load('../checkpoint/400__model.pth')
     model.load_state_dict(checkpoint)
     model.eval()
     img_iist=os.listdir(img_path)
@@ -27,6 +27,7 @@ def main():
         input = transform(input)
         input = torch.unsqueeze(input, 0)
         output=model(input)
+        print(output)
         output_cpu_with_norm=output.detach().cpu().numpy()
         output_cpu = np.array(loc_normalize_std).astype(np.float32)*output_cpu_with_norm
         bbox=loc2bbox(np.array([[0,0,height,width]]),output_cpu)

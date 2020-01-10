@@ -46,22 +46,17 @@ class CabinData(Dataset):
         crop_scale_h = np.clip(1 + np.random.rand(), 1, 1.2)
 
         c = (bbox[0] + (bbox[2] - bbox[0]) / 2, bbox[1] + (bbox[3] - bbox[1]) / 2)
-        c_new = c + np.clip(np.random.randn() * 50, -20, 20)
+        c_new = c + np.clip(np.random.randn() * 100, -100, 100)
         new_x1 = np.clip(c_new[0] - crop_scale_w * (bbox[2] - bbox[0]) / 2, 0, bbox[0])
         new_y1 = np.clip(c_new[1] - crop_scale_h * (bbox[3] - bbox[1]) / 2, 0, bbox[1])
         new_x2 = np.clip(c_new[0] + crop_scale_w * (bbox[2] - bbox[0]) / 2, bbox[2], img_numpy.shape[1])
         new_y2 = np.clip(c_new[1] + crop_scale_h * (bbox[3] - bbox[1]) / 2, bbox[3], img_numpy.shape[0])
         cropped_img = img_numpy[int(new_y1):int(new_y2), int(new_x1):int(new_x2)]
-        try:
-            if cropped_img.shape[0]==0:
-                print(img_path)
-                print(new_x1, new_y1, new_x2, new_y2)
-
-            resized_img = cv2.resize(cropped_img, self.input_size)
-        except:
-            print(img_path)
-            print(cropped_img.shape[0],cropped_img[1])
-            print(new_x1,new_y1,new_x2,new_y2)
+        new_bbox = [(bbox[1] - new_y1), (bbox[0] - new_x1), (bbox[3] - new_y1),(bbox[2] - new_x1)]
+        cv2.rectangle(cropped_img,(int(new_bbox[1]),int(new_bbox[0])),(int(new_bbox[3]),int(new_bbox[2])),(0,255,0))
+        cv2.imshow('test',cropped_img)
+        cv2.waitKey(0)
+        resized_img = cv2.resize(cropped_img, self.input_size)
         resized_img_random_bri = self._brightness(resized_img)
         resized_img_gray = cv2.cvtColor(resized_img_random_bri, cv2.COLOR_BGR2GRAY)
 
@@ -69,7 +64,6 @@ class CabinData(Dataset):
         input_img = self.trans(input_img)
         scale_x = cropped_img.shape[1] / self.input_size[1]
         scale_y = cropped_img.shape[0] / self.input_size[0]
-        new_bbox = [(bbox[1] - new_y1), (bbox[0] - new_x1), (bbox[3] - new_y1),(bbox[2] - new_x1)]
         # new_bbox = list(map(int, new_bbox))
         if cropped_img.shape[0]<=0:
             print(img_path)
@@ -77,6 +71,7 @@ class CabinData(Dataset):
                                 np.array(new_bbox).astype(np.float32),img_path)
         target = ((target - np.array(self.loc_normalize_mean, np.float32)
                    ) / np.array(self.loc_normalize_std, np.float32)).astype(np.float32)
+        print(target)
         gt = dict()
         gt['target'] = target
         gt['img'] = input_img

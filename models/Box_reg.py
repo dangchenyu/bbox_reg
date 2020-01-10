@@ -10,7 +10,7 @@ class Box_reg(nn.Module):
         super(Box_reg, self).__init__()
         self.backbone = Resnet18()
         self.regresssion = nn.Sequential(
-            nn.Linear(512 * 5 * 5, 4096),
+            nn.Linear(512 * 6 * 6, 4096),
             nn.ReLU(True),
             nn.Dropout(),
             nn.Linear(4096, 4096),

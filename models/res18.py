@@ -40,7 +40,7 @@ class Resnet18(nn.Module):
         self.conv2s = self._make_layer(128, 1, Basicblock, 2, 2)
         self.conv3s = self._make_layer(256, 1, Basicblock, 2, 2)
         self.conv4s = self._make_layer(512, 1, Basicblock, 2, 2)
-        self.max_pool = nn.MaxPool2d(3,3,0)
+        self.max_pool = nn.MaxPool2d(3,3,1)
     def _make_layer(self, output_channel, expansion, block, num_blocks, stride):
         layers = []
         strides = [stride] + [1] * (num_blocks-1)
