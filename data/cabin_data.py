@@ -14,8 +14,11 @@ class CabinData(Dataset):
         self.image_path = cfg.train_data_folder + 'images/' + self.front_or_back
         if self.front_or_back == 'front':
             self.label_path = cfg.train_data_folder + 'anno/' + 'txt_front.txt'
-        else:
+        elif self.front_or_back == 'back':
             self.label_path = cfg.train_data_folder + 'anno/' + 'txt_back.txt'
+        else:
+            self.label_path = cfg.train_data_folder + 'anno/' + 'mixed.txt'
+
         f = open(self.label_path)
         self.loc_normalize_mean = (0., 0., 0., 0.)
         self.loc_normalize_std = (0.1, 0.1, 0.2, 0.2)
@@ -42,21 +45,25 @@ class CabinData(Dataset):
 
         bbox = list(map(eval, data_current['bbox']))
         label = data_current['label']
-        crop_scale_w = np.clip(1 + np.random.rand(), 1, 1.3)
-        crop_scale_h = np.clip(1 + np.random.rand(), 1, 1.2)
+        crop_scale_w = np.random.uniform(0.8, 1.3)
+        crop_scale_h = np.random.uniform(0.7, 1.2)
 
         c = (bbox[0] + (bbox[2] - bbox[0]) / 2, bbox[1] + (bbox[3] - bbox[1]) / 2)
-        c_new = c + np.clip(np.random.randn() * 100, -100, 100)
-        new_x1 = np.clip(c_new[0] - crop_scale_w * (bbox[2] - bbox[0]) / 2, 0, bbox[0])
-        new_y1 = np.clip(c_new[1] - crop_scale_h * (bbox[3] - bbox[1]) / 2, 0, bbox[1])
-        new_x2 = np.clip(c_new[0] + crop_scale_w * (bbox[2] - bbox[0]) / 2, bbox[2], img_numpy.shape[1])
-        new_y2 = np.clip(c_new[1] + crop_scale_h * (bbox[3] - bbox[1]) / 2, bbox[3], img_numpy.shape[0])
+        temp=(np.random.randint(-100, 100))
+        c_new = c + np.array(temp)
+        new_x1 = np.clip(c_new[0] - crop_scale_w * (bbox[2] - bbox[0]) / 2, 0, bbox[0]+(bbox[2] - bbox[0]) / 2)
+        new_y1 = np.clip(c_new[1] - crop_scale_h * (bbox[3] - bbox[1]) / 2, 0, bbox[1]+(bbox[3] - bbox[1]) / 2)
+        new_x2 = np.clip(c_new[0] + crop_scale_w * (bbox[2] - bbox[0]) / 2, bbox[2]-(bbox[2] - bbox[0]) / 2, img_numpy.shape[1])
+        new_y2 = np.clip(c_new[1] + crop_scale_h * (bbox[3] - bbox[1]) / 2, bbox[3]-(bbox[3] - bbox[1]) / 2, img_numpy.shape[0])
         cropped_img = img_numpy[int(new_y1):int(new_y2), int(new_x1):int(new_x2)]
-        new_bbox = [(bbox[1] - new_y1), (bbox[0] - new_x1), (bbox[3] - new_y1),(bbox[2] - new_x1)]
-        cv2.rectangle(cropped_img,(int(new_bbox[1]),int(new_bbox[0])),(int(new_bbox[3]),int(new_bbox[2])),(0,255,0))
-        cv2.imshow('test',cropped_img)
+
+        cv2.rectangle(img_numpy,(int(new_x1),int(new_y1)),(int(new_x2),int(new_y2)),(0,255,0))
+        cv2.rectangle(img_numpy,(int(bbox[0]),int(bbox[1])),(int(bbox[2]),int(bbox[3])),(255,255,0))
+
+        cv2.imshow('test',img_numpy)
         cv2.waitKey(0)
         resized_img = cv2.resize(cropped_img, self.input_size)
+
         resized_img_random_bri = self._brightness(resized_img)
         resized_img_gray = cv2.cvtColor(resized_img_random_bri, cv2.COLOR_BGR2GRAY)
 
@@ -65,17 +72,14 @@ class CabinData(Dataset):
         scale_x = cropped_img.shape[1] / self.input_size[1]
         scale_y = cropped_img.shape[0] / self.input_size[0]
         # new_bbox = list(map(int, new_bbox))
-        if cropped_img.shape[0]<=0:
-            print(img_path)
-        target = self._bbox2loc(np.array([0, 0, cropped_img.shape[0], cropped_img.shape[1]]).astype(np.float32),
-                                np.array(new_bbox).astype(np.float32),img_path)
+        bbox_array=np.array([bbox[1],bbox[0],bbox[3],bbox[2]]).astype(np.float32)
+        target = self._bbox2loc(np.array([new_y1, new_x1, new_y2, new_x2]).astype(np.float32),
+                                bbox_array,img_path)
         target = ((target - np.array(self.loc_normalize_mean, np.float32)
                    ) / np.array(self.loc_normalize_std, np.float32)).astype(np.float32)
-        print(target)
         gt = dict()
         gt['target'] = target
         gt['img'] = input_img
-        gt['bbox'] = new_bbox
         gt['label'] = label
         return gt
 
@@ -142,11 +146,8 @@ class CabinData(Dataset):
         eps = np.finfo(height.dtype).eps
         height = np.maximum(height, eps)
         width = np.maximum(width, eps)
-
         dy = (base_ctr_y - ctr_y) / height
         dx = (base_ctr_x - ctr_x) / width
-        if height<=0:
-            print(imgname,height)
         dh = np.log(base_height / height)
         dw = np.log(base_width / width)
 

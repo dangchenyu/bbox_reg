@@ -34,13 +34,13 @@ class Basicblock(nn.Module):
 class Resnet18(nn.Module):
     def __init__(self):
         super(Resnet18, self).__init__()
-        self.input_channel = 64
-        self.layers = nn.Sequential(nn.Conv2d(1, 64, 3, 1, 1), nn.BatchNorm2d(64), nn.ReLU(inplace=True))
-        self.conv1s = self._make_layer(64, 1, Basicblock, 2, 1)
-        self.conv2s = self._make_layer(128, 1, Basicblock, 2, 2)
-        self.conv3s = self._make_layer(256, 1, Basicblock, 2, 2)
-        self.conv4s = self._make_layer(512, 1, Basicblock, 2, 2)
-        self.max_pool = nn.MaxPool2d(3,3,1)
+        self.input_channel = 32
+        self.layers = nn.Sequential(nn.Conv2d(1, 32, 3, 1, 1), nn.BatchNorm2d(32), nn.ReLU(inplace=True))
+        self.conv1s = self._make_layer(32, 1, Basicblock, 2, 1)
+        self.conv2s = self._make_layer(64, 1, Basicblock, 2, 2)
+        self.conv3s = self._make_layer(128, 1, Basicblock, 2, 2)
+        self.conv4s = self._make_layer(256, 1, Basicblock, 2, 2)
+        self.max_pool = nn.MaxPool2d(4,4)
     def _make_layer(self, output_channel, expansion, block, num_blocks, stride):
         layers = []
         strides = [stride] + [1] * (num_blocks-1)

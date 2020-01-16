@@ -9,7 +9,7 @@ def main():
     img_path='../bbox_test/'
     loc_normalize_std=[0.1,0.1,0.2,0.2]
     model=Box_reg()
-    checkpoint=torch.load('../checkpoint/400__model.pth')
+    checkpoint=torch.load('../checkpoint/6   0__model.pth')
     model.load_state_dict(checkpoint)
     model.eval()
     img_iist=os.listdir(img_path)
@@ -17,7 +17,7 @@ def main():
         img_data_numpy=cv2.imread(img_path+i)
         height=img_data_numpy.shape[0]
         width=img_data_numpy.shape[1]
-        img_resized=cv2.resize(img_data_numpy,(128,128))
+        img_resized=cv2.resize(img_data_numpy,(64,64))
         img_gray=cv2.cvtColor(img_resized,cv2.COLOR_BGR2GRAY)
         input=(img_gray/256.0).astype(np.float32)
         transform = transforms.Compose([
@@ -37,7 +37,6 @@ def main():
         cv2.imshow('test',img_data_numpy)
         cv2.waitKey(0)
 def loc2bbox(src_bbox, loc):
-
     if src_bbox.shape[0] == 0:
         return np.zeros((0, 4), dtype=loc.dtype)
 

@@ -15,14 +15,14 @@ from utils.smooth_L1_loss import _smooth_l1_loss
 def parse_arg():
     parser = argparse.ArgumentParser('train bbox regression')
     parser.add_argument('--train_data_folder', default='../data/', type=str)
-    parser.add_argument('--input_size', default=(128, 128), type=tuple)
+    parser.add_argument('--input_size', default=(64, 64), type=tuple)
     parser.add_argument('--cuda', dest='cuda',
                         help='whether use CUDA',
                         action='store_true')
-    parser.add_argument('--gpus', default=(0,1,2), help='gpus available for training')
+    parser.add_argument('--gpus', default=[0], help='gpus available for training')
     parser.add_argument('--front_or_back', default='', help='choose front or back for training')
     parser.add_argument('--epochs', default=401, type=int)
-    parser.add_argument('--batch_size', default=24, type=int)
+    parser.add_argument('--batch_size', default=8, type=int)
     args = parser.parse_args()
     return args
 
@@ -46,16 +46,19 @@ def main():
 
 
 if __name__ == '__main__':
-    os.environ['CUDA_VISIBLE_DEVICES'] = '6,7,8'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '9'
     cfg = parse_arg()
     global_step=0
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = Box_reg()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.0001,momentum=0.9)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+        optimizer, [50,100,150,200,250,300,350,400], 0.1
+    )
     trans = transforms.ToTensor()
     Dataset = CabinData(cfg, trans)
     writer = SummaryWriter()
-    train_loader = DataLoader(Dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=4)
+    train_loader = DataLoader(Dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=8)
     if device == 'cuda':
         model = torch.nn.DataParallel(model, device_ids=cfg.gpus).cuda()
         print("Data paralleling...")
@@ -64,6 +67,7 @@ if __name__ == '__main__':
     print('loading {} items'.format(Dataset.__len__()))
     for i in range(cfg.epochs):
         main()
+        lr_scheduler.step()
         if i % 20 == 0:
             state_dict = model.module.state_dict()
             print('saving checkpoint...')
